@@ -1,0 +1,15 @@
+services:
+  upsd:
+    image: ghcr.io/rtm516/nut-upsd:latest
+    restart: unless-stopped
+    ports:
+      - "3493:3493"
+    volumes:
+      - ./ups.conf:/etc/nut/ups.conf:ro
+    environment:
+      UPSMON_USER: upsmon
+      UPSMON_PASSWORD: changeme
+    # For USB UPS pass-through:
+    devices:
+      - /dev/bus/usb:/dev/bus/usb
+    privileged: true
