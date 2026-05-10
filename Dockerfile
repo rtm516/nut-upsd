@@ -18,6 +18,7 @@ RUN apk add --no-cache \
     net-snmp-dev \
     neon-dev \
     libmodbus-dev \
+    i2c-tools-dev \
     curl
 
 RUN addgroup -S nut && adduser -S -G nut -h /var/run/nut nut
@@ -42,25 +43,21 @@ RUN ./configure \
     --with-altpidpath=/var/run/nut \
     --with-user=nut \
     --with-group=nut \
+    --without-all \
     --with-serial \
     --with-usb \
     --with-snmp \
     --with-neon \
     --with-modbus \
+    --with-i2c \
     --with-openssl \
     --with-nss \
     --with-libltdl \
     --with-drivers=all \
-    --without-wrap \
-    --without-cgi \
-    --without-avahi \
     --without-powerman \
     --without-ipmi \
     --without-freeipmi \
-    --without-doc \
-    --without-python \
-    --without-python2 \
-    --without-python3 \
+    --without-upower \
     --disable-static
 
 RUN make -j"$(nproc)"
@@ -78,6 +75,7 @@ RUN apk add --no-cache \
     net-snmp-libs \
     neon \
     libmodbus \
+    i2c-tools \
     libltdl \
     tini
 
