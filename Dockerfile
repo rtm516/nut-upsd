@@ -6,24 +6,19 @@ FROM alpine:latest AS builder
 ARG NUT_VERSION
 ENV NUT_VERSION=${NUT_VERSION}
 
-# Build deps derived from NUT CI (docs/config-prereqs.txt + .github/workflows/01-make-dist.yml)
-# translated from Ubuntu package names to Alpine equivalents
+# Build deps from Alpine's official APKBUILD for nut
+# https://gitlab.alpinelinux.org/alpine/aports/-/blob/master/community/nut/APKBUILD
 RUN apk add --no-cache \
     build-base \
-    autoconf automake libtool libltdl \
-    pkgconf \
-    linux-headers \
-    perl curl \
+    autoconf automake libtool \
     openssl-dev \
+    nss-dev \
     libusb-dev \
-    libusb-compat-dev \
     hidapi-dev \
     net-snmp-dev \
     neon-dev \
     libmodbus-dev \
-    libgpiod-dev \
-    glib-dev \
-    i2c-tools-dev
+    curl
 
 RUN addgroup -S nut && adduser -S -G nut -h /var/run/nut nut
 
@@ -36,27 +31,36 @@ RUN curl -fsSL "https://github.com/networkupstools/nut/releases/download/v${NUT_
 
 WORKDIR /tmp/nut-${NUT_VERSION}
 
-# --with-all=auto: enable every feature whose deps are present, skip the rest
-# Mirrors NUT CI's own approach (configure --with-all)
-# We have to disable a few features manually since their deps aren't available in Alpine (powerman, ipmi, freeipmi, avahi)
+# Configure flags aligned with Alpine's official nut APKBUILD
 RUN ./configure \
     --prefix=/usr \
     --sysconfdir=/etc/nut \
     --datadir=/usr/share/nut \
+    --libexecdir=/usr/lib/nut \
+    --with-drvpath=/usr/lib/nut \
+    --with-statepath=/var/run/nut \
+    --with-altpidpath=/var/run/nut \
     --with-user=nut \
     --with-group=nut \
-    --with-all=auto \
-    --with-ssl=openssl \
+    --with-serial \
+    --with-usb \
+    --with-snmp \
+    --with-neon \
+    --with-modbus \
+    --with-openssl \
+    --with-nss \
+    --with-libltdl \
     --with-drivers=all \
-    --without-doc \
+    --without-wrap \
     --without-cgi \
-    --without-python \
-    --without-python2 \
-    --without-python3 \
+    --without-avahi \
     --without-powerman \
     --without-ipmi \
     --without-freeipmi \
-    --without-avahi \
+    --without-doc \
+    --without-python \
+    --without-python2 \
+    --without-python3 \
     --disable-static
 
 RUN make -j"$(nproc)"
@@ -65,18 +69,16 @@ RUN make DESTDIR=/build install
 # --- Container ---
 FROM alpine:latest
 
-# Runtime libs matching what was linked at build time
+# Runtime libs matching Alpine's nut package dependencies
 RUN apk add --no-cache \
     openssl \
+    nss \
     libusb \
-    libusb-compat \
     hidapi \
     net-snmp-libs \
     neon \
     libmodbus \
-    libgpiod \
     libltdl \
-    glib \
     tini
 
 RUN addgroup -S nut && adduser -S -G nut -h /var/run/nut nut
@@ -85,8 +87,8 @@ COPY --from=builder /build/usr /usr
 COPY --from=builder /build/etc/nut /etc/nut
 
 # state directory for upsd pid/socket
-RUN mkdir -p /var/run/nut /var/state/ups \
-    && chown -R nut:nut /var/run/nut /var/state/ups /etc/nut
+RUN mkdir -p /var/run/nut \
+    && chown -R nut:nut /var/run/nut /etc/nut
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
