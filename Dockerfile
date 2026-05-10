@@ -38,6 +38,7 @@ WORKDIR /tmp/nut-${NUT_VERSION}
 
 # --with-all=auto: enable every feature whose deps are present, skip the rest
 # Mirrors NUT CI's own approach (configure --with-all)
+# We have to disable a few features manually since their deps aren't available in Alpine (powerman, ipmi, freeipmi, avahi)
 RUN ./configure \
     --prefix=/usr \
     --sysconfdir=/etc/nut \
@@ -52,6 +53,10 @@ RUN ./configure \
     --without-python \
     --without-python2 \
     --without-python3 \
+    --without-powerman \
+    --without-ipmi \
+    --without-freeipmi \
+    --without-avahi \
     --disable-static
 
 RUN make -j"$(nproc)"
