@@ -1,6 +1,7 @@
 # NUT upsd - Docker image
 [![License: GPL-3.0](https://img.shields.io/github/license/rtm516/nut-upsd)](LICENSE)
 [![Build Release](https://github.com/rtm516/nut-upsd/actions/workflows/build.yml/badge.svg)](https://github.com/rtm516/nut-upsd/actions/workflows/build.yml)
+[![GitHub Release](https://img.shields.io/github/v/release/rtm516/nut-upsd)](https://github.com/rtm516/nut-upsd/releases)
 
 Minimal Alpine-based Docker image running [Network UPS Tools](https://networkupstools.org/) `upsd`.
 A GitHub Actions workflow automatically rebuilds the image when a new NUT release is published.

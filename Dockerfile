@@ -1,19 +1,29 @@
 ARG NUT_VERSION=2.8.5
 
-# Builder
+# --- Builder ---
 FROM alpine:latest AS builder
 
 ARG NUT_VERSION
 ENV NUT_VERSION=${NUT_VERSION}
 
+# Build deps derived from NUT CI (docs/config-prereqs.txt + .github/workflows/01-make-dist.yml)
+# translated from Ubuntu package names to Alpine equivalents
 RUN apk add --no-cache \
     build-base \
-    autoconf automake libtool \
+    autoconf automake libtool libltdl \
+    pkgconf \
+    linux-headers \
+    perl curl \
     openssl-dev \
     libusb-dev \
+    libusb-compat-dev \
+    hidapi-dev \
     net-snmp-dev \
     neon-dev \
-    curl
+    libmodbus-dev \
+    libgpiod-dev \
+    glib-dev \
+    i2c-tools-dev
 
 RUN addgroup -S nut && adduser -S -G nut -h /var/run/nut nut
 
@@ -26,38 +36,42 @@ RUN curl -fsSL "https://github.com/networkupstools/nut/releases/download/v${NUT_
 
 WORKDIR /tmp/nut-${NUT_VERSION}
 
+# --with-all=auto: enable every feature whose deps are present, skip the rest
+# Mirrors NUT CI's own approach (configure --with-all)
 RUN ./configure \
     --prefix=/usr \
     --sysconfdir=/etc/nut \
+    --datadir=/usr/share/nut \
     --with-user=nut \
     --with-group=nut \
-    --with-openssl \
-    --with-usb=auto \
-    --with-snmp=auto \
-    --with-neon=auto \
+    --with-all=auto \
+    --with-ssl=openssl \
     --with-drivers=all \
-    --datadir=/usr/share/nut \
     --without-doc \
+    --without-cgi \
     --without-python \
     --without-python2 \
     --without-python3 \
-    --without-cgi \
-    --without-avahi \
-    --without-powerman \
-    --without-ipmi \
-    --without-freeipmi \
-    --disable-static \
-    && make -j"$(nproc)" \
-    && make DESTDIR=/build install
+    --disable-static
 
-# Container
+RUN make -j"$(nproc)"
+RUN make DESTDIR=/build install
+
+# --- Container ---
 FROM alpine:latest
 
+# Runtime libs matching what was linked at build time
 RUN apk add --no-cache \
     openssl \
     libusb \
+    libusb-compat \
+    hidapi \
     net-snmp-libs \
     neon \
+    libmodbus \
+    libgpiod \
+    libltdl \
+    glib \
     tini
 
 RUN addgroup -S nut && adduser -S -G nut -h /var/run/nut nut
