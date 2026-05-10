@@ -45,8 +45,10 @@ if [ ! -f "$CONFDIR/ups.conf" ]; then
     exit 1
 fi
 
-# Fix any ownership issues on the run and config directory
+# Fix any ownership/permissions issues
 chown -R nut:nut /var/run/nut "$CONFDIR"
+chmod 750 /var/run/nut
+chmod 640 "$CONFDIR/upsd.conf" "$CONFDIR/upsd.users"
 
 # Start upsd
 echo "Starting NUT drivers..."
