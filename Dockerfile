@@ -88,6 +88,9 @@ COPY --from=builder /build/etc/nut /etc/nut
 RUN mkdir -p /var/run/nut \
     && chown -R nut:nut /var/run/nut /etc/nut
 
+ENV NUT_QUIET_INIT_SSL=true \
+    NUT_QUIET_INIT_UPSNOTIFY=true
+
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
